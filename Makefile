@@ -1,8 +1,21 @@
 # Dither's Boyfriend - Makefile
 
 CXX = g++
-CXXFLAGS = -std=c++17 -O3 -Wall -Wextra -I./external/imgui -I./external/imgui/backends
-LDFLAGS = -lGL -lGLFW -lopencv_core -lopencv_imgproc -lopencv_imgcodecs -lopencv_videoio -lopencv_highgui
+
+# Detect OpenCV using pkg-config
+OPENCV_CFLAGS := $(shell pkg-config --cflags opencv4 2>/dev/null || pkg-config --cflags opencv 2>/dev/null)
+OPENCV_LIBS := $(shell pkg-config --libs opencv4 2>/dev/null || pkg-config --libs opencv 2>/dev/null)
+
+# If pkg-config fails, use default paths
+ifeq ($(OPENCV_CFLAGS),)
+    OPENCV_CFLAGS = -I/usr/include/opencv4
+endif
+ifeq ($(OPENCV_LIBS),)
+    OPENCV_LIBS = -lopencv_core -lopencv_imgproc -lopencv_imgcodecs -lopencv_videoio -lopencv_highgui
+endif
+
+CXXFLAGS = -std=c++17 -O3 -Wall -Wextra -I./external/imgui -I./external/imgui/backends $(OPENCV_CFLAGS)
+LDFLAGS = -lGL -lglfw $(OPENCV_LIBS)
 
 # Source files
 IMGUI_DIR = external/imgui
@@ -17,7 +30,10 @@ IMGUI_SRC = $(IMGUI_DIR)/imgui.cpp \
 
 # Object files
 OBJ_DIR = build
-OBJS = $(SRC:src/%.cpp=$(OBJ_DIR)/%.o) $(IMGUI_SRC:$(IMGUI_DIR)/%.cpp=$(OBJ_DIR)/imgui_%.o)
+IMGUI_OBJS = $(OBJ_DIR)/imgui.o $(OBJ_DIR)/imgui_demo.o $(OBJ_DIR)/imgui_draw.o \
+             $(OBJ_DIR)/imgui_tables.o $(OBJ_DIR)/imgui_widgets.o \
+             $(OBJ_DIR)/imgui_impl_glfw.o $(OBJ_DIR)/imgui_impl_opengl3.o
+OBJS = $(OBJ_DIR)/main.o $(OBJ_DIR)/dithering.o $(IMGUI_OBJS)
 
 # Target executables
 TARGET = dithers-boyfriend
@@ -37,18 +53,40 @@ $(TARGET): $(OBJS)
 
 # Link CLI version
 $(TARGET_CLI): $(OBJ_DIR)/cli.o $(OBJ_DIR)/dithering.o
-	$(CXX) $^ -o $@ -lopencv_core -lopencv_imgproc -lopencv_imgcodecs
+	$(CXX) $^ -o $@ $(OPENCV_LIBS)
 	@echo "CLI version complete! Run with: ./$(TARGET_CLI)"
 
 # Compile source files
-$(OBJ_DIR)/%.o: src/%.cpp | $(OBJ_DIR)
+$(OBJ_DIR)/main.o: src/main.cpp | $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Compile ImGui files
-$(OBJ_DIR)/imgui_%.o: $(IMGUI_DIR)/%.cpp | $(OBJ_DIR)
+$(OBJ_DIR)/dithering.o: src/dithering.cpp | $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(OBJ_DIR)/imgui_%.o: $(IMGUI_DIR)/backends/%.cpp | $(OBJ_DIR)
+$(OBJ_DIR)/cli.o: src/cli.cpp | $(OBJ_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Compile ImGui core files
+$(OBJ_DIR)/imgui.o: $(IMGUI_DIR)/imgui.cpp | $(OBJ_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/imgui_demo.o: $(IMGUI_DIR)/imgui_demo.cpp | $(OBJ_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/imgui_draw.o: $(IMGUI_DIR)/imgui_draw.cpp | $(OBJ_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/imgui_tables.o: $(IMGUI_DIR)/imgui_tables.cpp | $(OBJ_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/imgui_widgets.o: $(IMGUI_DIR)/imgui_widgets.cpp | $(OBJ_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Compile ImGui backend files
+$(OBJ_DIR)/imgui_impl_glfw.o: $(IMGUI_DIR)/backends/imgui_impl_glfw.cpp | $(OBJ_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/imgui_impl_opengl3.o: $(IMGUI_DIR)/backends/imgui_impl_opengl3.cpp | $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Clean
