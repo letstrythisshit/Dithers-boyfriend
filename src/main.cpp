@@ -4,6 +4,7 @@
 #include <thread>
 #include <atomic>
 #include <chrono>
+#include <algorithm>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/videoio.hpp>
@@ -104,8 +105,12 @@ void processImage(AppState& state) {
 
 // Load image file
 bool loadImage(AppState& state, const std::string& filename) {
+    std::cout << "Loading image: " << filename << std::endl;
     cv::Mat img = cv::imread(filename, cv::IMREAD_COLOR);
-    if (img.empty()) return false;
+    if (img.empty()) {
+        std::cerr << "Error: Could not load image: " << filename << std::endl;
+        return false;
+    }
 
     state.originalImage = img;
     state.currentFile = filename;
@@ -115,13 +120,115 @@ bool loadImage(AppState& state, const std::string& filename) {
     updateTexture(state.originalTexture, state.originalImage);
     processImage(state);
 
+    std::cout << "Image loaded successfully: " << img.cols << "x" << img.rows << std::endl;
     return true;
+}
+
+// Open file dialog using system tools (cross-platform Linux)
+std::string openFileDialog() {
+    std::string filename;
+
+    // Try zenity (GTK-based, most common)
+    FILE* pipe = popen("zenity --file-selection --title='Select Image' --file-filter='Images | *.png *.jpg *.jpeg *.bmp *.tiff *.webp' 2>/dev/null", "r");
+    if (pipe) {
+        char buffer[512];
+        if (fgets(buffer, sizeof(buffer), pipe)) {
+            filename = buffer;
+            // Remove trailing newline
+            if (!filename.empty() && filename.back() == '\n') {
+                filename.pop_back();
+            }
+        }
+        pclose(pipe);
+        if (!filename.empty()) return filename;
+    }
+
+    // Try kdialog (KDE)
+    pipe = popen("kdialog --getopenfilename ~ 'Images (*.png *.jpg *.jpeg *.bmp *.tiff *.webp)' 2>/dev/null", "r");
+    if (pipe) {
+        char buffer[512];
+        if (fgets(buffer, sizeof(buffer), pipe)) {
+            filename = buffer;
+            if (!filename.empty() && filename.back() == '\n') {
+                filename.pop_back();
+            }
+        }
+        pclose(pipe);
+        if (!filename.empty()) return filename;
+    }
+
+    // Fallback: terminal input
+    std::cout << "\n=== File Selection ===" << std::endl;
+    std::cout << "Enter image path: ";
+    std::getline(std::cin, filename);
+
+    return filename;
+}
+
+// Drag and drop callback
+void dropCallback(GLFWwindow* window, int count, const char** paths) {
+    AppState* state = static_cast<AppState*>(glfwGetWindowUserPointer(window));
+    if (count > 0 && state) {
+        std::string filepath = paths[0];
+        std::cout << "File dropped: " << filepath << std::endl;
+
+        // Check if it's a video or image
+        std::string ext = filepath.substr(filepath.find_last_of(".") + 1);
+        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+
+        if (ext == "mp4" || ext == "avi" || ext == "mov" || ext == "mkv") {
+            std::cout << "Video file detected. Use CLI for video processing." << std::endl;
+            state->isVideo = true;
+        } else {
+            loadImage(*state, filepath);
+        }
+    }
 }
 
 // Save image file
 bool saveImage(AppState& state, const std::string& filename) {
     if (state.processedImage.empty()) return false;
     return cv::imwrite(filename, state.processedImage);
+}
+
+// Save file dialog
+std::string saveFileDialog() {
+    std::string filename;
+
+    // Try zenity (GTK-based)
+    FILE* pipe = popen("zenity --file-selection --save --confirm-overwrite --title='Save Image' --file-filter='PNG | *.png' --file-filter='JPEG | *.jpg' 2>/dev/null", "r");
+    if (pipe) {
+        char buffer[512];
+        if (fgets(buffer, sizeof(buffer), pipe)) {
+            filename = buffer;
+            if (!filename.empty() && filename.back() == '\n') {
+                filename.pop_back();
+            }
+        }
+        pclose(pipe);
+        if (!filename.empty()) return filename;
+    }
+
+    // Try kdialog (KDE)
+    pipe = popen("kdialog --getsavefilename ~ '*.png *.jpg | Image Files' 2>/dev/null", "r");
+    if (pipe) {
+        char buffer[512];
+        if (fgets(buffer, sizeof(buffer), pipe)) {
+            filename = buffer;
+            if (!filename.empty() && filename.back() == '\n') {
+                filename.pop_back();
+            }
+        }
+        pclose(pipe);
+        if (!filename.empty()) return filename;
+    }
+
+    // Fallback: terminal input
+    std::cout << "\n=== Save File ===" << std::endl;
+    std::cout << "Enter output path (e.g., output.png): ";
+    std::getline(std::cin, filename);
+
+    return filename;
 }
 
 // Process video
@@ -172,21 +279,29 @@ void renderGUI(AppState& state) {
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
             if (ImGui::MenuItem("Open Image", "Ctrl+O")) {
-                // File dialog would go here
-                std::cout << "Open file dialog..." << std::endl;
+                std::string filepath = openFileDialog();
+                if (!filepath.empty()) {
+                    loadImage(state, filepath);
+                }
             }
             if (ImGui::MenuItem("Open Video")) {
-                std::cout << "Open video dialog..." << std::endl;
+                std::cout << "Video processing available via CLI: ./dithers-boyfriend-cli" << std::endl;
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Save As...", "Ctrl+S")) {
                 if (state.imageLoaded && !state.processedImage.empty()) {
-                    saveImage(state, "output.png");
-                    std::cout << "Saved to output.png" << std::endl;
+                    std::string filepath = saveFileDialog();
+                    if (!filepath.empty()) {
+                        if (saveImage(state, filepath)) {
+                            std::cout << "Saved to " << filepath << std::endl;
+                        } else {
+                            std::cerr << "Failed to save image" << std::endl;
+                        }
+                    }
                 }
             }
             if (ImGui::MenuItem("Export Video")) {
-                std::cout << "Export video dialog..." << std::endl;
+                std::cout << "Video export available via CLI: ./dithers-boyfriend-cli" << std::endl;
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Exit", "Alt+F4")) {
@@ -381,10 +496,27 @@ void renderGUI(AppState& state) {
             }
         }
     } else {
+        // No image loaded - show helpful instructions
         ImVec2 availSize = ImGui::GetContentRegionAvail();
-        ImGui::SetCursorPos(ImVec2(availSize.x * 0.5f - 100, availSize.y * 0.5f));
-        ImGui::Text("No image loaded");
-        ImGui::Text("Use 'Load Test Image' to start");
+        ImGui::SetCursorPos(ImVec2(availSize.x * 0.5f - 200, availSize.y * 0.5f - 60));
+
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
+        ImGui::TextWrapped("Drop an image here");
+        ImGui::PopStyleColor();
+
+        ImGui::SetCursorPosX(availSize.x * 0.5f - 200);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
+        ImGui::TextWrapped("or use:");
+        ImGui::PopStyleColor();
+
+        ImGui::SetCursorPosX(availSize.x * 0.5f - 200);
+        ImGui::Text("- File > Open Image");
+        ImGui::SetCursorPosX(availSize.x * 0.5f - 200);
+        ImGui::Text("- Load Test Image button");
+        ImGui::SetCursorPosX(availSize.x * 0.5f - 200);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.8f, 1.0f, 1.0f));
+        ImGui::TextWrapped("Supported: PNG, JPEG, BMP, TIFF, WebP");
+        ImGui::PopStyleColor();
     }
 
     ImGui::End();
@@ -527,10 +659,18 @@ int main(int argc, char** argv) {
     // Application state
     AppState state;
 
+    // Set up drag and drop
+    glfwSetWindowUserPointer(window, &state);
+    glfwSetDropCallback(window, dropCallback);
+
     // Load image from command line if provided
     if (argc > 1) {
         loadImage(state, argv[1]);
     }
+
+    std::cout << "\nDither's Boyfriend is ready!" << std::endl;
+    std::cout << "Drag and drop images onto the window to load them." << std::endl;
+    std::cout << "Or use File > Open Image from the menu." << std::endl;
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
