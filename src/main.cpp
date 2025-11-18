@@ -444,26 +444,69 @@ void setupImGuiStyle() {
     style.PopupBorderSize = 1.0f;
 }
 
+// GLFW error callback
+void glfwErrorCallback(int error, const char* description) {
+    std::cerr << "GLFW Error " << error << ": " << description << std::endl;
+}
+
 int main(int argc, char** argv) {
+    // Set GLFW error callback
+    glfwSetErrorCallback(glfwErrorCallback);
+
     // Initialize GLFW
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW" << std::endl;
+        std::cerr << "Make sure you have a display and graphics drivers installed." << std::endl;
         return -1;
     }
 
-    // GL 3.3 + GLSL 330
-    const char* glsl_version = "#version 330";
+    // Try different OpenGL configurations
+    GLFWwindow* window = nullptr;
+    const char* glsl_version = nullptr;
+
+    // Try OpenGL 3.3 Core first
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    window = glfwCreateWindow(1600, 900, "Dither's Boyfriend - Advanced Dithering", nullptr, nullptr);
+    glsl_version = "#version 330";
 
-    // Create window
-    GLFWwindow* window = glfwCreateWindow(1600, 900, "Dither's Boyfriend - Advanced Dithering", nullptr, nullptr);
+    // Fallback to OpenGL 3.0
     if (!window) {
-        std::cerr << "Failed to create GLFW window" << std::endl;
+        std::cerr << "OpenGL 3.3 not available, trying OpenGL 3.0..." << std::endl;
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_ANY_PROFILE);
+        window = glfwCreateWindow(1600, 900, "Dither's Boyfriend - Advanced Dithering", nullptr, nullptr);
+        glsl_version = "#version 130";
+    }
+
+    // Fallback to OpenGL 2.1
+    if (!window) {
+        std::cerr << "OpenGL 3.0 not available, trying OpenGL 2.1..." << std::endl;
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_ANY_PROFILE);
+        window = glfwCreateWindow(1600, 900, "Dither's Boyfriend - Advanced Dithering", nullptr, nullptr);
+        glsl_version = "#version 120";
+    }
+
+    // Final check
+    if (!window) {
+        std::cerr << "Failed to create GLFW window with any OpenGL version!" << std::endl;
+        std::cerr << "\nTroubleshooting:" << std::endl;
+        std::cerr << "1. Check if DISPLAY is set: echo $DISPLAY" << std::endl;
+        std::cerr << "2. Check if X server is running: ps aux | grep X" << std::endl;
+        std::cerr << "3. Update graphics drivers" << std::endl;
+        std::cerr << "4. Try running: export DISPLAY=:0" << std::endl;
+        std::cerr << "\nFor headless systems, use the CLI version instead:" << std::endl;
+        std::cerr << "  ./dithers-boyfriend-cli --help" << std::endl;
         glfwTerminate();
         return -1;
     }
+
+    std::cout << "OpenGL context created successfully!" << std::endl;
 
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable vsync
