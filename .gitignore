@@ -1,35 +1,30 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# Build artifacts
+build/
+*.o
+dithers-boyfriend
+dithers-boyfriend-cli
 
-node_modules
-dist
-dist-ssr
-*.local
+# External libraries
+external/imgui/
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
 
-# Tauri
-src-tauri/target
-src-tauri/Cargo.lock
+# Temporary files
+*.tmp
+*.bak
 
-# Build outputs
-*.exe
-*.dmg
-*.deb
-*.AppImage
-*.msi
+# Output files
+output*.png
+output*.jpg
+output*.mp4
+output*.avi
+
+# Test files
+test_*.png
+test_*.jpg
