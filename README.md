@@ -75,6 +75,8 @@ Dither's Boyfriend is a powerful, feature-rich image and video dithering applica
 ### 🎨 Beautiful UI
 
 - **Photoshop-like Interface** - Professional dark theme
+- **Drag-and-Drop Support** - Simply drop images onto the window
+- **Native File Dialogs** - Works with GTK (zenity) and KDE (kdialog)
 - **Intuitive Controls** - Easy-to-use sliders and dropdowns
 - **Real-time Performance** - Optimized C++ code for instant feedback
 - **Responsive Layout** - Adapts to different window sizes
@@ -125,6 +127,9 @@ The build script will install these automatically, but if you want to install ma
 sudo apt-get update
 sudo apt-get install -y build-essential git cmake pkg-config \
     libopencv-dev libglfw3-dev libgl1-mesa-dev
+
+# Optional: For native file dialogs (recommended)
+sudo apt-get install -y zenity
 ```
 
 **Fedora/RHEL:**
@@ -198,8 +203,10 @@ make        # Build
 ### GUI Controls
 
 1. **Load an Image**
+   - **Drag and drop** any image file onto the window
+   - Click **File → Open Image** to use a file picker
    - Click "Load Test Image" to generate a test gradient
-   - Or use File → Open Image to load your own
+   - Or pass a file path as a command-line argument
 
 2. **Select Algorithm**
    - Choose from 24+ dithering algorithms in the dropdown

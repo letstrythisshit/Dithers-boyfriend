@@ -99,9 +99,10 @@ deps:
 	@echo "Installing dependencies..."
 	@command -v apt-get >/dev/null 2>&1 && sudo apt-get update && \
 		sudo apt-get install -y build-essential git cmake pkg-config \
-		libopencv-dev libglfw3-dev libgl1-mesa-dev || \
-		echo "Please install dependencies manually: build-essential, git, cmake, pkg-config, libopencv-dev, libglfw3-dev, libgl1-mesa-dev"
+		libopencv-dev libglfw3-dev libgl1-mesa-dev zenity || \
+		echo "Please install dependencies manually: build-essential, git, cmake, pkg-config, libopencv-dev, libglfw3-dev, libgl1-mesa-dev, zenity"
 	@echo "Dependencies installed!"
+	@echo "Note: zenity provides native file dialogs (optional but recommended)"
 
 # Download ImGui
 imgui:

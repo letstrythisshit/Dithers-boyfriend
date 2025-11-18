@@ -75,7 +75,8 @@ if [ "$OS" == "linux" ]; then
             libglfw3-dev \
             libgl1-mesa-dev \
             libglu1-mesa-dev \
-            xorg-dev
+            xorg-dev \
+            zenity
         print_success "Dependencies installed via apt"
     elif command -v yum &> /dev/null; then
         print_status "Using yum package manager..."
