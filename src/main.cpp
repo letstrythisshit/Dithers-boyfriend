@@ -16,6 +16,7 @@
 #include <GL/gl.h>
 
 #include "dithering.h"
+#include "platform.h"
 
 // Application state
 struct AppState {
@@ -124,46 +125,6 @@ bool loadImage(AppState& state, const std::string& filename) {
     return true;
 }
 
-// Open file dialog using system tools (cross-platform Linux)
-std::string openFileDialog() {
-    std::string filename;
-
-    // Try zenity (GTK-based, most common)
-    FILE* pipe = popen("zenity --file-selection --title='Select Image' --file-filter='Images | *.png *.jpg *.jpeg *.bmp *.tiff *.webp' 2>/dev/null", "r");
-    if (pipe) {
-        char buffer[512];
-        if (fgets(buffer, sizeof(buffer), pipe)) {
-            filename = buffer;
-            // Remove trailing newline
-            if (!filename.empty() && filename.back() == '\n') {
-                filename.pop_back();
-            }
-        }
-        pclose(pipe);
-        if (!filename.empty()) return filename;
-    }
-
-    // Try kdialog (KDE)
-    pipe = popen("kdialog --getopenfilename ~ 'Images (*.png *.jpg *.jpeg *.bmp *.tiff *.webp)' 2>/dev/null", "r");
-    if (pipe) {
-        char buffer[512];
-        if (fgets(buffer, sizeof(buffer), pipe)) {
-            filename = buffer;
-            if (!filename.empty() && filename.back() == '\n') {
-                filename.pop_back();
-            }
-        }
-        pclose(pipe);
-        if (!filename.empty()) return filename;
-    }
-
-    // Fallback: terminal input
-    std::cout << "\n=== File Selection ===" << std::endl;
-    std::cout << "Enter image path: ";
-    std::getline(std::cin, filename);
-
-    return filename;
-}
 
 // Drag and drop callback
 void dropCallback(GLFWwindow* window, int count, const char** paths) {
@@ -191,45 +152,6 @@ bool saveImage(AppState& state, const std::string& filename) {
     return cv::imwrite(filename, state.processedImage);
 }
 
-// Save file dialog
-std::string saveFileDialog() {
-    std::string filename;
-
-    // Try zenity (GTK-based)
-    FILE* pipe = popen("zenity --file-selection --save --confirm-overwrite --title='Save Image' --file-filter='PNG | *.png' --file-filter='JPEG | *.jpg' 2>/dev/null", "r");
-    if (pipe) {
-        char buffer[512];
-        if (fgets(buffer, sizeof(buffer), pipe)) {
-            filename = buffer;
-            if (!filename.empty() && filename.back() == '\n') {
-                filename.pop_back();
-            }
-        }
-        pclose(pipe);
-        if (!filename.empty()) return filename;
-    }
-
-    // Try kdialog (KDE)
-    pipe = popen("kdialog --getsavefilename ~ '*.png *.jpg | Image Files' 2>/dev/null", "r");
-    if (pipe) {
-        char buffer[512];
-        if (fgets(buffer, sizeof(buffer), pipe)) {
-            filename = buffer;
-            if (!filename.empty() && filename.back() == '\n') {
-                filename.pop_back();
-            }
-        }
-        pclose(pipe);
-        if (!filename.empty()) return filename;
-    }
-
-    // Fallback: terminal input
-    std::cout << "\n=== Save File ===" << std::endl;
-    std::cout << "Enter output path (e.g., output.png): ";
-    std::getline(std::cin, filename);
-
-    return filename;
-}
 
 // Process video
 void processVideo(AppState& state, const std::string& inputPath, const std::string& outputPath) {
@@ -279,7 +201,7 @@ void renderGUI(AppState& state) {
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
             if (ImGui::MenuItem("Open Image", "Ctrl+O")) {
-                std::string filepath = openFileDialog();
+                std::string filepath = Platform::openFileDialog();
                 if (!filepath.empty()) {
                     loadImage(state, filepath);
                 }
@@ -290,7 +212,7 @@ void renderGUI(AppState& state) {
             ImGui::Separator();
             if (ImGui::MenuItem("Save As...", "Ctrl+S")) {
                 if (state.imageLoaded && !state.processedImage.empty()) {
-                    std::string filepath = saveFileDialog();
+                    std::string filepath = Platform::saveFileDialog();
                     if (!filepath.empty()) {
                         if (saveImage(state, filepath)) {
                             std::cout << "Saved to " << filepath << std::endl;
