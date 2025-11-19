@@ -148,8 +148,20 @@ sudo pacman -S base-devel git cmake opencv glfw-x11 mesa glu
 brew install opencv glfw cmake pkg-config
 ```
 
+**Windows:**
+```batch
+REM Install vcpkg for dependencies
+git clone https://github.com/Microsoft/vcpkg.git
+cd vcpkg
+.\bootstrap-vcpkg.bat
+.\vcpkg install opencv4:x64-windows glfw3:x64-windows
+
+REM See WINDOWS_BUILD.md for detailed instructions
+```
+
 ### Building from Source
 
+**Linux/macOS:**
 ```bash
 # Clone the repository
 git clone <repository-url>
@@ -163,6 +175,33 @@ chmod +x build.sh
 make setup  # Download dependencies
 make        # Build
 ```
+
+**Windows:**
+```batch
+REM Clone the repository
+git clone <repository-url>
+cd Dithers-boyfriend
+
+REM Set vcpkg path
+set VCPKG_ROOT=C:\vcpkg
+
+REM Run build script
+build.bat
+
+REM Or use CMake manually (see WINDOWS_BUILD.md)
+```
+
+**Cross-Platform (CMake):**
+```bash
+# Works on all platforms
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+cmake --build . --config Release
+```
+
+For detailed platform-specific build instructions:
+- **Windows**: See [WINDOWS_BUILD.md](WINDOWS_BUILD.md)
+- **All platforms**: See [BUILD.md](BUILD.md)
 
 ---
 
@@ -350,10 +389,8 @@ Dithers-boyfriend/
 - **GUI:** Dear ImGui (immediate mode GUI)
 - **Graphics:** OpenGL 3.3, GLFW
 - **Image Processing:** OpenCV 4.x
-- **Build System:** Make
-- **Platform:** Cross-platform (Linux, macOS, Windows*)
-
-*Windows support requires MinGW or MSVC
+- **Build System:** Make (Linux/macOS), CMake (all platforms)
+- **Platform:** Cross-platform (Linux, macOS, Windows)
 
 ---
 

@@ -33,7 +33,7 @@ OBJ_DIR = build
 IMGUI_OBJS = $(OBJ_DIR)/imgui.o $(OBJ_DIR)/imgui_demo.o $(OBJ_DIR)/imgui_draw.o \
              $(OBJ_DIR)/imgui_tables.o $(OBJ_DIR)/imgui_widgets.o \
              $(OBJ_DIR)/imgui_impl_glfw.o $(OBJ_DIR)/imgui_impl_opengl3.o
-OBJS = $(OBJ_DIR)/main.o $(OBJ_DIR)/dithering.o $(IMGUI_OBJS)
+OBJS = $(OBJ_DIR)/main.o $(OBJ_DIR)/dithering.o $(OBJ_DIR)/platform.o $(IMGUI_OBJS)
 
 # Target executables
 TARGET = dithers-boyfriend
@@ -61,6 +61,9 @@ $(OBJ_DIR)/main.o: src/main.cpp | $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(OBJ_DIR)/dithering.o: src/dithering.cpp | $(OBJ_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/platform.o: src/platform.cpp | $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(OBJ_DIR)/cli.o: src/cli.cpp | $(OBJ_DIR)
